@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Alignment Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-wrapper label {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .file-input-wrapper label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            padding: 15px 30px;
+            background: #f0f7ff;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-value {
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 30px;
+            max-height: calc(100vh - 400px);
+            overflow-y: auto;
+        }
+
+        .alignment-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .alignment-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .verse-header {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .chapter-verse {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1em;
+            gap: 8px;
+        }
+
+        .chapter-label {
+            opacity: 0.9;
+            font-size: 0.85em;
+        }
+
+        .verse-label {
+            opacity: 0.9;
+            font-size: 0.85em;
+        }
+
+        .line-number {
+            display: inline-block;
+            background: #f0f7ff;
+            color: #667eea;
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.85em;
+            border: 1px solid #667eea30;
+        }
+
+        .sentence-pair {
+            margin: 15px 0;
+        }
+
+        .sentence-label {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .sentence-text {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            line-height: 1.8;
+            font-size: 1.1em;
+            color: #333;
+            border-left: 4px solid #667eea;
+        }
+
+        .alignments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #e0e0e0;
+        }
+
+        .alignments-title {
+            font-weight: 600;
+            color: #764ba2;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .alignment-pairs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .alignment-pair {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border: 1px solid #667eea40;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .alignment-pair:hover {
+            background: linear-gradient(135deg, #667eea30 0%, #764ba230 100%);
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .word-source {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .arrow {
+            color: #999;
+            margin: 0 6px;
+        }
+
+        .word-target {
+            color: #764ba2;
+            font-weight: 600;
+        }
+
+        .no-alignments {
+            color: #999;
+            font-style: italic;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .nav-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .nav-button:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .page-info {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .alignment-pairs {
+                flex-direction: column;
+            }
+
+            .verse-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Word Alignment Viewer</h1>
+            <p>Interactive visualization of GIZA++ word alignments</p>
+        </div>
+
+        <div class="controls">
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".txt">
+                <label for="fileInput">📁 Load Alignment File</label>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Search in alignments..." disabled>
+            </div>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-item">
+                <span class="stat-label">Total Verses:</span>
+                <span class="stat-value" id="totalLines">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Showing:</span>
+                <span class="stat-value" id="showingLines">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Total Alignments:</span>
+                <span class="stat-value" id="totalAlignments">0</span>
+            </div>
+        </div>
+
+        <div class="content" id="content">
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <h2>No Alignment File Loaded</h2>
+                <p>Click the "Load Alignment File" button above to load your GIZA++ alignment results</p>
+            </div>
+        </div>
+
+        <div class="navigation" id="navigation" style="display: none;">
+            <button class="nav-button" id="prevBtn" disabled>← Previous</button>
+            <span class="page-info" id="pageInfo">Page 1 of 1</span>
+            <button class="nav-button" id="nextBtn" disabled>Next →</button>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        let allAlignments = [];
+        let filteredAlignments = [];
+        const itemsPerPage = 10;
+        let currentPage = 1;
+
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const searchInput = document.getElementById('searchInput');
+        const content = document.getElementById('content');
+        const stats = document.getElementById('stats');
+        const navigation = document.getElementById('navigation');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageInfo = document.getElementById('pageInfo');
+
+        // Event listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        searchInput.addEventListener('input', handleSearch);
+        prevBtn.addEventListener('click', () => changePage(-1));
+        nextBtn.addEventListener('click', () => changePage(1));
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoading();
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseAlignmentFile(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseAlignmentFile(text) {
+            allAlignments = [];
+            const lines = text.split('\n');
+            let currentAlignment = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // Check for new format: === Chapter X, Verse Y (Line Z) ===
+                let match = line.match(/=== Chapter (\d+), Verse (\d+) \(Line (\d+)\) ===/);
+                
+                // Fallback to old format: === Line Z ===
+                if (!match) {
+                    match = line.match(/=== Line (\d+) ===/);
+                    if (match) {
+                        if (currentAlignment) {
+                            allAlignments.push(currentAlignment);
+                        }
+                        currentAlignment = {
+                            chapter: null,
+                            verse: null,
+                            lineNumber: parseInt(match[1]),
+                            source: '',
+                            target: '',
+                            alignments: []
+                        };
+                    }
+                } else {
+                    // New format with chapter and verse
+                    if (currentAlignment) {
+                        allAlignments.push(currentAlignment);
+                    }
+                    currentAlignment = {
+                        chapter: match[1],
+                        verse: match[2],
+                        lineNumber: parseInt(match[3]),
+                        source: '',
+                        target: '',
+                        alignments: []
+                    };
+                }
+                
+                if (line.startsWith('Source:')) {
+                    if (currentAlignment) {
+                        currentAlignment.source = line.substring(7).trim();
+                    }
+                } else if (line.startsWith('Target:')) {
+                    if (currentAlignment) {
+                        currentAlignment.target = line.substring(7).trim();
+                    }
+                } else if (line.match(/^\d+:/)) {
+                    if (currentAlignment) {
+                        const alignMatch = line.match(/(\d+):(\S+)\s*->\s*(\d+):(.+)/);
+                        if (alignMatch) {
+                            currentAlignment.alignments.push({
+                                srcIdx: parseInt(alignMatch[1]),
+                                srcWord: alignMatch[2],
+                                tgtIdx: parseInt(alignMatch[3]),
+                                tgtWord: alignMatch[4].trim()
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (currentAlignment) {
+                allAlignments.push(currentAlignment);
+            }
+
+            filteredAlignments = [...allAlignments];
+            currentPage = 1;
+            updateDisplay();
+            updateStats();
+            searchInput.disabled = false;
+            stats.style.display = 'flex';
+            navigation.style.display = 'flex';
+        }
+
+        function handleSearch(event) {
+            const query = event.target.value.toLowerCase();
+            
+            if (!query) {
+                filteredAlignments = [...allAlignments];
+            } else {
+                filteredAlignments = allAlignments.filter(item => {
+                    return item.source.toLowerCase().includes(query) ||
+                           item.target.toLowerCase().includes(query) ||
+                           (item.chapter && item.chapter.includes(query)) ||
+                           (item.verse && item.verse.includes(query)) ||
+                           item.alignments.some(a => 
+                               a.srcWord.toLowerCase().includes(query) ||
+                               a.tgtWord.toLowerCase().includes(query)
+                           );
+                });
+            }
+
+            currentPage = 1;
+            updateDisplay();
+            updateStats();
+        }
+
+        function updateDisplay() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageItems = filteredAlignments.slice(start, end);
+
+            if (pageItems.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No Results Found</h2>
+                        <p>Try adjusting your search query</p>
+                    </div>
+                `;
+                return;
+            }
+
+            content.innerHTML = pageItems.map(item => `
+                <div class="alignment-item">
+                    <div class="verse-header">
+                        ${item.chapter && item.verse ? `
+                            <div class="chapter-verse">
+                                <span class="chapter-label">Ch</span>
+                                <strong>${item.chapter}</strong>
+                                <span>:</span>
+                                <span class="verse-label">V</span>
+                                <strong>${item.verse}</strong>
+                            </div>
+                        ` : ''}
+                        <div class="line-number">Line ${item.lineNumber}</div>
+                    </div>
+                    
+                    <div class="sentence-pair">
+                        <div class="sentence-label">Source</div>
+                        <div class="sentence-text">${escapeHtml(item.source)}</div>
+                    </div>
+                    
+                    <div class="sentence-pair">
+                        <div class="sentence-label">Target</div>
+                        <div class="sentence-text">${escapeHtml(item.target)}</div>
+                    </div>
+                    
+                    <div class="alignments-section">
+                        <div class="alignments-title">Word Alignments (${item.alignments.length})</div>
+                        ${item.alignments.length > 0 ? `
+                            <div class="alignment-pairs">
+                                ${item.alignments.map(a => `
+                                    <div class="alignment-pair">
+                                        <span class="word-source">${escapeHtml(a.srcWord)}</span>
+                                        <span class="arrow">→</span>
+                                        <span class="word-target">${escapeHtml(a.tgtWord)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<div class="no-alignments">No alignments found</div>'}
+                    </div>
+                </div>
+            `).join('');
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredAlignments.length / itemsPerPage);
+            
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        }
+
+        function changePage(delta) {
+            const totalPages = Math.ceil(filteredAlignments.length / itemsPerPage);
+            const newPage = currentPage + delta;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                updateDisplay();
+                content.scrollTop = 0;
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalLines').textContent = allAlignments.length;
+            document.getElementById('showingLines').textContent = filteredAlignments.length;
+            
+            const totalAlignments = filteredAlignments.reduce((sum, item) => 
+                sum + item.alignments.length, 0
+            );
+            document.getElementById('totalAlignments').textContent = totalAlignments;
+        }
+
+        function showLoading() {
+            content.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading alignment file...</p>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
