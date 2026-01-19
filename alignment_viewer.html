@@ -482,8 +482,21 @@
                 // Check for new format: === Chapter X, Verse Y (Line Z) ===
                 let match = line.match(/=== Chapter (\d+), Verse (\d+) \(Line (\d+)\) ===/);
                 
-                // Fallback to old format: === Line Z ===
-                if (!match) {
+                if (match) {
+                    // New format with chapter and verse
+                    if (currentAlignment) {
+                        allAlignments.push(currentAlignment);
+                    }
+                    currentAlignment = {
+                        chapter: parseInt(match[1]),
+                        verse: parseInt(match[2]),
+                        lineNumber: parseInt(match[3]),
+                        source: '',
+                        target: '',
+                        alignments: []
+                    };
+                } else {
+                    // Fallback to old format: === Line Z ===
                     match = line.match(/=== Line (\d+) ===/);
                     if (match) {
                         if (currentAlignment) {
@@ -498,19 +511,6 @@
                             alignments: []
                         };
                     }
-                } else {
-                    // New format with chapter and verse
-                    if (currentAlignment) {
-                        allAlignments.push(currentAlignment);
-                    }
-                    currentAlignment = {
-                        chapter: match[1],
-                        verse: match[2],
-                        lineNumber: parseInt(match[3]),
-                        source: '',
-                        target: '',
-                        alignments: []
-                    };
                 }
                 
                 if (line.startsWith('Source:')) {
