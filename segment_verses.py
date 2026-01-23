@@ -7,6 +7,25 @@ import re
 import sys
 import os
 
+# Initialize jieba with traditional Chinese dictionary
+_jieba_initialized = False
+
+def _initialize_jieba():
+    """Initialize jieba with traditional Chinese dictionary."""
+    global _jieba_initialized
+    if not _jieba_initialized:
+        try:
+            import jieba
+            jieba.set_dictionary('trad_dict.txt')
+            _jieba_initialized = True
+        except ImportError:
+            print("Error: jieba not installed. Installing...")
+            import subprocess
+            subprocess.run([sys.executable, '-m', 'pip', 'install', 'jieba'], check=True)
+            import jieba
+            jieba.set_dictionary('trad_dict.txt')
+            _jieba_initialized = True
+
 def extract_verse_info(line):
     """
     Extract chapter, verse number, and text from a line.
@@ -24,7 +43,7 @@ def extract_verse_info(line):
 
 def segment_chinese(text):
     """
-    Segment Chinese text using jieba.
+    Segment Chinese text using jieba with traditional Chinese dictionary.
     
     Args:
         text: Chinese text to segment
@@ -32,16 +51,10 @@ def segment_chinese(text):
     Returns:
         Space-separated segmented text
     """
-    try:
-        import jieba
-        # Segment and join with spaces
-        return ' '.join(jieba.cut(text))
-    except ImportError:
-        print("Error: jieba not installed. Installing...")
-        import subprocess
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'jieba'], check=True)
-        import jieba
-        return ' '.join(jieba.cut(text))
+    _initialize_jieba()
+    import jieba
+    # Segment and join with spaces
+    return ' '.join(jieba.cut(text))
 
 def segment_file(input_file, output_file):
     """
